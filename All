@@ -1,0 +1,492 @@
+Bit Stuffing and De-Stuffing
+
+        #include<stdio.h> 
+        #include<string.h> 
+        int main() 
+        { 
+        char ch, array[50]="01111110",read_array[50]; 
+        int count=0,i=8,j,k; 
+        printf("Enter data to be transmitted:"); 
+        do 
+        { 
+        scanf("%c",&ch); 
+        if(ch=='\n')
+        break; 
+           if(ch=='1') 
+            count++; 
+           else 
+           count=0; 
+           array[i++]=ch; 
+            if(count==5) 
+            { 
+             array[i++]='0'; 
+             count=0; 
+            } 
+           } while(ch!='\n'); 
+         
+         strcat(array,"01111110"); /* FLAG pattern for START and END of HDLC 
+        frame format*/ 
+         printf("\n Transmitted bit stream(After stuffing) at the transmitter side is:%s", array);
+         j=strlen(array); 
+         count=0; 
+         k=0; 
+         for(i=8;i<j-8;i++) 
+         { 
+           if(array[i]=='1') 
+            count++; 
+           else 
+            count=0; 
+            read_array[k]=array[i]; 
+            k++; 
+            if(count==5 && array[i+1]=='0') 
+            { 
+             i++; 
+             count=0; 
+            } 
+         } 
+         read_array[k]='\0'; 
+         printf("\n Destuffed data at the receiver is :"); 
+         for(i=0;i<k;i++) 
+          printf("%c",read_array[i]); 
+         return 0; 
+        } 
+
+
+
+Character Stuffing and De-Stuffing
+
+ 
+#include<stdio.h> 
+#include<string.h> 
+#define DLE 16 
+#define STX 2 
+#define ETX 3 
+ 
+int  main() 
+ 
+{ 
+ char ch; 
+ char arr[100]={DLE,STX}; 
+ int i=2,j; 
+ printf("\n Enter the data stream(CTRL+B->STX,CTRL+C->ETX,CTRL+P>DLE):\n"); 
+  
+ do 
+ { 
+  scanf("%c", &ch); 
+  printf("char is ",ch); 
+  if(ch=='\n') 
+   break; 
+ 
+  if(ch==DLE) 
+    { 
+     arr[i++]=DLE; 
+     printf("DLE"); 
+    } 
+    else if(ch==2) 
+        printf("STX"); 
+    else if(ch==3) 
+     printf("ETX"); 
+    else 
+     printf("%c",ch); 
+    arr[i++]=ch; 
+ }while(ch!='\n'); 
+  
+ arr[i++]=DLE; 
+ arr[i++]=ETX; 
+  
+ printf("\n The stuffed stream is \n");
+ for(j=0;j<i;j++) 
+ { 
+   if(arr[j]==DLE) 
+    printf("DLE"); 
+   else if(arr[j]==STX) 
+    printf("STX"); 
+   else if(arr[j]==ETX) 
+    printf("ETX"); 
+   else 
+    printf("%c",arr[j]); 
+  } 
+  
+ printf("\n The de-stuffed data is \n"); 
+ for(j=2;j<i-2;j++) 
+ { 
+  if(arr[j]==DLE) 
+   { 
+    printf("DLE"); 
+    j++; 
+   } 
+  else if(arr[j]==STX) 
+   printf("STX"); 
+  else if(arr[j]==ETX) 
+   printf("ETX"); 
+  else 
+   printf("%c",arr[j]); 
+ } 
+ return 0; 
+} 
+
+
+Cyclic Redundancy Check
+
+
+#include <stdio.h>
+#define DEGREE 16
+
+int mod2add(int x, int y) { return x ^ y; }
+
+int getnext(int array[], int pos) {
+    while (pos < DEGREE && array[pos] == 0) ++pos;
+    return pos;
+}
+
+void calc_crc(int length, int result[]) {
+    int ccitt[DEGREE + 1] = {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, pos = 0;
+
+    while (pos <= length - DEGREE) {
+        for (int i = 0; i <= DEGREE; ++i)
+            result[pos + i] = mod2add(result[pos + i], ccitt[i]);
+        pos = getnext(result, pos);
+    }
+}
+
+int main() {
+    int array[30], result[30], length = 0;
+    char ch;
+
+    printf("Enter the data (Message) stream: ");
+    while ((ch = getchar()) != '\n') array[length++] = ch - '0';
+
+    for (int i = 0; i < DEGREE; ++i) array[length + i] = result[length + i] = 0;
+
+    for (int i = 0; i < length + DEGREE; ++i) result[i] = array[i];
+    calc_crc(length + DEGREE, result);
+
+    printf("\nThe transmitted frame is: ");
+    for (int i = 0; i < length + DEGREE; ++i) printf("%d", i < length ? array[i] : result[i]);
+
+    printf("\nEnter the stream for which CRC has to be checked: ");
+    length = 0;
+    while ((ch = getchar()) != '\n') array[length++] = ch - '0';
+
+    for (int i = 0; i < length; ++i) result[i] = array[i];
+    calc_crc(length, result);
+
+    printf("\nCalculated Checksum: ");
+    for (int i = length - DEGREE; i < length; ++i) printf("%d", result[i]);
+
+    return 0;
+}
+
+
+ENCRYPTION USING SUBSTITUTION
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void main() {
+    char seq[] = "qwertyuiopasdfghjklzxcvbnm1234567890", data[50], encoded[50];
+    int i, len;
+    printf("Enter data: ");
+    gets(data);
+    len = strlen(data);
+
+    for (i = 0; i < len; i++) {
+        if (isupper(data[i]))
+            encoded[i] = seq[data[i] - 'A'];
+        else if (islower(data[i]))
+            encoded[i] = toupper(seq[data[i] - 'a']);
+        else if (isdigit(data[i]))
+            encoded[i] = seq[data[i] - '0' + 26];
+        else
+            encoded[i] = data[i];
+    }
+    encoded[len] = '\0';
+    printf("\nEncoded string is: %s", encoded);
+}
+
+DECRYPTION USING SUBSTITUTION
+
+#include<stdio.h> 
+#include<conio.h> 
+#include<string.h> 
+#include<ctype.h> 
+ 
+void main() 
+{ 
+ char seq[36]="qwertyuiopasdfghjklzxcvbnm1234567890"; 
+ char data[100]; 
+ char decoded[100]; 
+ int i,j,len,present=0; 
+ printf("\n Enter data:"); 
+  gets(data); 
+ len=strlen(data); 
+ 
+ 
+ for(i=0;i<len;i++) 
+ { 
+ 
+  for(j=0;j<36 && !present;++j)
+ 
+  { 
+   if(seq[j]==tolower(data[i])) 
+   { 
+    if(isupper(data[i])) 
+     decoded[i]='a'+j; 
+    else if(islower(data[i])) 
+     decoded[i]='A'+j; 
+    else decoded[i]='0'+(j-26); 
+     present=1; 
+   }  
+  } 
+ 
+  if(!present) 
+   decoded[i]=data[i]; 
+  else 
+    present=0; 
+ } 
+ 
+ decoded[len]='\0'; 
+ printf("\n Decoded string is:%s", decoded); 
+ 
+  } 
+
+ENCRYPTION USING TRANSPOSITION
+
+#include <stdio.h>
+#include <string.h>
+
+void main() {
+    char data[100], wrd[] = "MEGABUCK", cipher[20][8];
+    int seq[8], i, j, k, cnt;
+
+    for (i = 0; i < 8; i++) {
+        cnt = 0;
+        for (j = 0; j < 8; j++)
+            if (wrd[i] > wrd[j]) ++cnt;
+        seq[i] = cnt;
+    }
+
+    printf("Enter data: ");
+    gets(data);
+    cnt = strlen(data);
+
+    for (i = 0; i < cnt; i++)
+        cipher[i / 8][i % 8] = data[i];
+
+    for (j = i % 8; j < 8 && j != 0; j++)
+        cipher[i / 8][j] = '.', cnt++;
+
+    printf("\nEncrypted data:\n");
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 8; j++)
+            if (seq[j] == i) break;
+        for (k = 0; k < cnt / 8; k++)
+            printf("%c", cipher[k][j]);
+    }
+}
+
+DECRYPTION USING TRANSPOSITION
+
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char data[100], wrd[] = "MEGABUCK", cipher[20][8];
+    int seq[8], i, j, cnt, c;
+
+    for (i = 0; i < 8; i++) {
+        cnt = 0;
+        for (j = 0; j < 8; j++)
+            if (wrd[i] > wrd[j]) ++cnt;
+        seq[i] = cnt;
+    }
+
+    printf("Enter data: ");
+    gets(data);
+    cnt = strlen(data);
+
+    if (cnt % 8 != 0) {
+        printf("Error: Invalid Input");
+    } else {
+        for (i = 0; i < 8; i++) {
+            for (c = 0; c < 8; c++)
+                if (seq[c] == i) break;
+            for (j = 0; j < cnt / 8; j++)
+                cipher[j][c] = data[i * (cnt / 8) + j];
+        }
+
+        printf("Decrypted data: ");
+        for (i = 0; i < cnt; i++)
+            printf("%c", cipher[i / 8][i % 8]);
+    }
+    return 0;
+}
+
+KRUSHKALS ALGORITHM
+
+#include<stdio.h> 
+#include<conio.h> 
+#include<string.h> 
+ 
+struct node 
+{ 
+ int set; 
+} node[100]; 
+ 
+struct edge 
+{ 
+ int first_node,second_node,selected,distance; 
+}e[100]; 
+int edge_count=0; 
+ 
+void getdata(int index,int total) 
+{ 
+ int i; 
+ for(i=index;i<total;i++) 
+ { 
+   if(i!=index) 
+   { 
+   printf("\nEnter distance between Vertex %c and %c:",index+65,i+65); 
+   scanf("%d",&e[edge_count].distance); 
+   e[edge_count].first_node=index; 
+   e[edge_count].second_node=i; 
+   ++edge_count; 
+   } 
+ } 
+} 
+ 
+void init(int total) 
+{ 
+ int i; 
+ for(i=0;i<total;i++) 
+   node[i].set=i; 
+  for(i=0;i<edge_count;i++) 
+   e[i].selected=-1; 
+} 
+ 
+void sort() 
+{ 
+int i,j; 
+struct edge temp; 
+ 
+for(i=0;i<edge_count-1;i++) 
+for(j=0;j<edge_count-i-1;j++) 
+ if(e[j].distance>e[j+1].distance) 
+ { 
+   temp=e[j]; 
+   e[j]=e[j+1]; 
+   e[j+1]=temp ; 
+ } 
+ 
+} 
+ 
+void main() 
+{ 
+int i,total,j,k,m,n,edgeselected=0,nodel,noder; 
+ 
+printf("\nEnter the number of modes:"); 
+scanf("%d",&total); 
+for(i=0;i<total;i++) 
+ getdata(i,total); 
+ init(total); 
+ sort(); 
+ 
+printf("\nThe Sorted order of edges:"); 
+ for(i=0;i<edge_count;i++) 
+  printf("\nedge: %d first node: %c second node: %c distance: %d",i,e[i].first_node+65,e[i].second_node+65,e[i].distance); 
+i=0; 
+do 
+{ 
+ e[i].selected=1; 
+ nodel=e[i].first_node; 
+ noder=e[i].second_node; 
+ if(node[nodel].set==node[noder].set) 
+ e[i].selected=-1; 
+else 
+ { 
+   edgeselected++; 
+   m=node[nodel].set; 
+   k=node[noder].set; 
+   for(n=0;n<total;n++) 
+   { 
+    if(node[n].set==k) 
+    node[n].set=m; 
+   } 
+} 
+i++; 
+} 
+while(edgeselected<(total-1)); 
+printf("\nMinimum Spanning Tree is:"); 
+for(i=0;i<edge_count;++i) 
+ { 
+   if(e[i].selected==1) 
+printf("\n%c<------->%c Distance %d",e[i].first_node+65, 
+e[i].second_node+65, e[i].distance); 
+ } 
+}
+
+PRIMS ALGORITHM
+
+#include <stdio.h>
+
+#define INFINITY 999
+
+int prime(int cost[10][10], int source, int n) {
+    int visited[10] = {0}, cmp[10], vertex[10], sum = 0;
+
+    for (int i = 1; i <= n; i++) {
+        cmp[i] = cost[source][i];
+        vertex[i] = source;
+    }
+    visited[source] = 1;
+
+    for (int i = 1; i < n; i++) {
+        int min = INFINITY, u = -1;
+        for (int j = 1; j <= n; j++) {
+            if (!visited[j] && cmp[j] < min) {
+                min = cmp[j];
+                u = j;
+            }
+        }
+        if (u == -1) break; // Exit if no connected vertex is found
+
+        visited[u] = 1;
+        sum += cmp[u];
+        printf("\n %d -> %d sum = %d", vertex[u], u, cmp[u]);
+
+        for (int v = 1; v <= n; v++) {
+            if (!visited[v] && cost[u][v] < cmp[v]) {
+                cmp[v] = cost[u][v];
+                vertex[v] = u;
+            }
+        }
+    }
+    return sum;
+}
+
+int main() {
+    int a[10][10], n, source;
+
+    printf("\nEnter the number of vertices: ");
+    scanf("%d", &n);
+
+    printf("\nEnter the cost matrix (0 for self-loop and 999 for no edge):\n");
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            scanf("%d", &a[i][j]);
+            if ((i == j && a[i][j] != 0) || (i != j && a[i][j] != a[j][i])) {
+                printf("\nInvalid entry\nCost matrix should be symmetrical & diagonal elements should be zero.");
+                return 1;
+            }
+        }
+    }
+
+    printf("\nEnter the source vertex: ");
+    scanf("%d", &source);
+
+    int totalCost = prime(a, source, n);
+    printf("\n\nTotal cost = %d", totalCost);
+
+    return 0;
+}
